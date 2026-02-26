@@ -1,0 +1,1166 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Goal Flow Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&family=Space+Grotesk:wght@500;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg-1: #121417;
+        --bg-2: #1a1f24;
+        --ink: #e7ecf2;
+        --muted: #9ba7b4;
+        --panel: rgba(26, 31, 36, 0.82);
+        --panel-border: rgba(125, 220, 139, 0.16);
+        --accent: #7ddc8b;
+        --accent-soft: rgba(125, 220, 139, 0.18);
+        --success: #7ddc8b;
+        --warn: #e9d084;
+        --danger: #ff8b8b;
+        --shadow: 0 24px 70px rgba(0, 0, 0, 0.45);
+        --radius: 22px;
+        --radius-sm: 14px;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        color: var(--ink);
+        font-family: "Manrope", sans-serif;
+        background:
+          radial-gradient(1200px circle at 10% 0%, rgba(78, 95, 116, 0.35) 0%, transparent 42%),
+          radial-gradient(900px circle at 90% 100%, rgba(125, 220, 139, 0.16) 0%, transparent 44%),
+          linear-gradient(160deg, var(--bg-1), var(--bg-2));
+        overflow-x: hidden;
+      }
+
+      body::before,
+      body::after {
+        content: "";
+        position: fixed;
+        pointer-events: none;
+        border-radius: 999px;
+        filter: blur(54px);
+        opacity: 0.42;
+      }
+
+      body::before {
+        width: 340px;
+        height: 340px;
+        top: -120px;
+        right: 10%;
+        background: rgba(125, 220, 139, 0.52);
+        animation: driftA 13s ease-in-out infinite alternate;
+      }
+
+      body::after {
+        width: 260px;
+        height: 260px;
+        bottom: -90px;
+        left: 6%;
+        background: rgba(166, 182, 197, 0.35);
+        animation: driftB 10s ease-in-out infinite alternate;
+      }
+
+      .shell {
+        width: min(1220px, 100%);
+        margin: 0 auto;
+        padding: 28px 20px 34px;
+        display: grid;
+        gap: 18px;
+      }
+
+      .hero {
+        border: 1px solid var(--panel-border);
+        background: linear-gradient(130deg, rgba(40, 47, 56, 0.86), rgba(23, 27, 32, 0.92));
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        padding: 22px 24px;
+        position: relative;
+        overflow: hidden;
+        transform: translateY(14px);
+        opacity: 0;
+        animation: reveal 700ms ease forwards;
+      }
+
+      .hero::after {
+        content: "";
+        position: absolute;
+        inset: -40% auto auto -15%;
+        width: 58%;
+        height: 170%;
+        background: linear-gradient(110deg, rgba(125, 220, 139, 0.16), transparent);
+        transform: rotate(12deg);
+        pointer-events: none;
+      }
+
+      .hero-top {
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        align-items: flex-start;
+        position: relative;
+        z-index: 1;
+      }
+
+      .hero h1 {
+        margin: 0;
+        font-family: "Space Grotesk", sans-serif;
+        font-size: clamp(1.45rem, 3vw, 2.1rem);
+        letter-spacing: 0.015em;
+      }
+
+      .hero p {
+        margin: 8px 0 0;
+        color: var(--muted);
+        max-width: 72ch;
+      }
+
+      .chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        border-radius: 999px;
+        border: 1px solid rgba(125, 220, 139, 0.3);
+        background: rgba(125, 220, 139, 0.12);
+        color: #abf0b5;
+        font-size: 0.82rem;
+        padding: 8px 12px;
+        white-space: nowrap;
+      }
+
+      .chip-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 999px;
+        background: currentColor;
+        box-shadow: 0 0 14px currentColor;
+      }
+
+      .layout {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 18px;
+      }
+
+      .panel {
+        border-radius: var(--radius);
+        border: 1px solid var(--panel-border);
+        background: var(--panel);
+        box-shadow: var(--shadow);
+        padding: 20px;
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        opacity: 0;
+        transform: translateY(18px);
+        animation: reveal 720ms cubic-bezier(0.18, 0.84, 0.24, 1) forwards;
+      }
+
+      .panel:nth-child(1) {
+        animation-delay: 90ms;
+      }
+
+      .panel:nth-child(2) {
+        animation-delay: 160ms;
+      }
+
+      .title {
+        margin: 0 0 10px;
+        font-family: "Space Grotesk", sans-serif;
+        font-size: 1.12rem;
+      }
+
+      .muted {
+        color: var(--muted);
+      }
+
+      .controls {
+        display: grid;
+        gap: 14px;
+      }
+
+      .row {
+        display: flex;
+        gap: 10px;
+      }
+
+      .row > * {
+        min-width: 0;
+      }
+
+      input,
+      button {
+        border-radius: var(--radius-sm);
+        border: 1px solid rgba(183, 194, 205, 0.2);
+        font-family: "Manrope", sans-serif;
+        color: var(--ink);
+      }
+
+      input {
+        background: rgba(30, 36, 43, 0.8);
+        padding: 12px 14px;
+        outline: none;
+        transition: border-color 200ms ease, box-shadow 220ms ease;
+        flex: 1;
+      }
+
+      input:focus {
+        border-color: rgba(125, 220, 139, 0.82);
+        box-shadow: 0 0 0 3px rgba(125, 220, 139, 0.16);
+      }
+
+      button {
+        cursor: pointer;
+        background: linear-gradient(140deg, rgba(56, 66, 78, 0.95), rgba(39, 47, 57, 0.95));
+        padding: 11px 14px;
+        font-weight: 700;
+        transition: transform 180ms ease, border-color 180ms ease, background 180ms ease;
+      }
+
+      button:hover {
+        transform: translateY(-1px);
+        border-color: rgba(125, 220, 139, 0.48);
+        background: linear-gradient(140deg, rgba(70, 83, 97, 1), rgba(50, 60, 72, 1));
+      }
+
+      button:disabled {
+        opacity: 0.62;
+        cursor: not-allowed;
+      }
+
+      .button-ghost {
+        background: transparent;
+      }
+
+      .danger {
+        border-color: rgba(255, 122, 122, 0.42);
+        color: #ffb4b4;
+      }
+
+      .error {
+        min-height: 1.1em;
+        font-size: 0.9rem;
+        color: var(--danger);
+      }
+
+      .ok {
+        color: var(--success);
+      }
+
+      .stats {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .stat-card {
+        border-radius: var(--radius-sm);
+        border: 1px solid rgba(181, 194, 208, 0.16);
+        background: rgba(29, 35, 42, 0.78);
+        padding: 11px;
+      }
+
+      .stat-label {
+        font-size: 0.76rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--muted);
+      }
+
+      .stat-value {
+        margin-top: 5px;
+        font-family: "Space Grotesk", sans-serif;
+        font-size: 1.16rem;
+      }
+
+      .goal-list {
+        display: grid;
+        gap: 10px;
+      }
+
+      .goal-item {
+        border-radius: 15px;
+        border: 1px solid rgba(183, 197, 211, 0.2);
+        background: linear-gradient(145deg, rgba(36, 43, 51, 0.94), rgba(24, 30, 36, 0.9));
+        padding: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        opacity: 0;
+        transform: translateX(-10px);
+        animation: slideIn 420ms ease forwards;
+      }
+
+      .goal-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .goal-name {
+        font-weight: 700;
+      }
+
+      .goal-meta {
+        display: grid;
+        gap: 4px;
+      }
+
+      .target-badge {
+        display: inline-flex;
+        width: fit-content;
+        font-size: 0.76rem;
+        padding: 3px 8px;
+        border-radius: 999px;
+        border: 1px solid rgba(125, 220, 139, 0.34);
+        background: rgba(74, 103, 73, 0.25);
+        color: #bdf5c4;
+      }
+
+      .score-wrap {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 16px;
+        align-items: center;
+      }
+
+      .ring {
+        width: 136px;
+        height: 136px;
+      }
+
+      .track {
+        fill: none;
+        stroke: rgba(195, 204, 214, 0.2);
+        stroke-width: 10;
+      }
+
+      .progress {
+        fill: none;
+        stroke: var(--accent);
+        stroke-width: 10;
+        stroke-linecap: round;
+        transform: rotate(-90deg);
+        transform-origin: 50% 50%;
+        transition: stroke-dashoffset 660ms cubic-bezier(0.2, 0.8, 0.2, 1), stroke 340ms ease;
+      }
+
+      .score-value {
+        font-family: "Space Grotesk", sans-serif;
+        font-size: clamp(2.2rem, 5vw, 3rem);
+        line-height: 1;
+      }
+
+      .status-pill {
+        display: inline-block;
+        margin-top: 8px;
+        font-size: 0.86rem;
+        padding: 5px 9px;
+        border-radius: 999px;
+        border: 1px solid rgba(125, 220, 139, 0.32);
+        background: rgba(82, 122, 78, 0.24);
+      }
+
+      #scoreComment {
+        margin-top: 10px;
+        white-space: pre-line;
+        line-height: 1.5;
+        min-height: 3.1em;
+      }
+
+      #scoreMeta {
+        margin-top: 8px;
+        font-size: 0.86rem;
+      }
+
+      .pace {
+        margin-top: 14px;
+      }
+
+      .pace-label-row {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.84rem;
+      }
+
+      .pace-track {
+        margin-top: 8px;
+        border-radius: 999px;
+        height: 10px;
+        background: rgba(128, 139, 149, 0.26);
+        overflow: hidden;
+      }
+
+      .pace-fill {
+        width: 0%;
+        height: 100%;
+        background: linear-gradient(90deg, #6bcf7a, #a9efb4);
+        transition: width 520ms ease;
+      }
+
+      .analysis-grid {
+        margin-top: 8px;
+        display: grid;
+        gap: 7px;
+      }
+
+      .analysis-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .analysis-pill {
+        display: inline-flex;
+        align-items: center;
+        border-radius: 999px;
+        padding: 4px 9px;
+        font-size: 0.78rem;
+        font-weight: 700;
+        border: 1px solid rgba(160, 173, 186, 0.3);
+        background: rgba(98, 111, 124, 0.18);
+      }
+
+      .analysis-pill.good {
+        border-color: rgba(125, 220, 139, 0.55);
+        color: #baf5c2;
+        background: rgba(87, 140, 93, 0.26);
+      }
+
+      .analysis-pill.warn {
+        border-color: rgba(233, 208, 132, 0.55);
+        color: #f5e2af;
+        background: rgba(143, 122, 74, 0.3);
+      }
+
+      .analysis-pill.bad {
+        border-color: rgba(255, 139, 139, 0.52);
+        color: #ffc2c2;
+        background: rgba(145, 86, 86, 0.3);
+      }
+
+      .analysis-pill.neutral {
+        color: #c8d2dc;
+      }
+
+      .activity-grid {
+        margin-top: 14px;
+        display: grid;
+        grid-template-columns: repeat(14, minmax(0, 1fr));
+        gap: 6px;
+      }
+
+      .activity-cell {
+        aspect-ratio: 1 / 1;
+        border-radius: 7px;
+        border: 1px solid rgba(173, 186, 198, 0.18);
+        background: rgba(55, 64, 73, 0.56);
+        transition: transform 220ms ease, filter 220ms ease;
+      }
+
+      .activity-cell:hover {
+        transform: translateY(-1px);
+        filter: brightness(1.1);
+      }
+
+      .level-1 {
+        background: rgba(118, 196, 128, 0.44);
+      }
+
+      .level-2 {
+        background: rgba(125, 220, 139, 0.56);
+      }
+
+      .level-3 {
+        background: rgba(169, 239, 180, 0.82);
+      }
+
+      .quick-actions {
+        margin-top: 14px;
+        display: grid;
+        gap: 9px;
+      }
+
+      @keyframes reveal {
+        0% {
+          transform: translateY(18px);
+          opacity: 0;
+        }
+        100% {
+          transform: translateY(0);
+          opacity: 1;
+        }
+      }
+
+      @keyframes slideIn {
+        from {
+          transform: translateX(-10px);
+          opacity: 0;
+        }
+        to {
+          transform: translateX(0);
+          opacity: 1;
+        }
+      }
+
+      @keyframes driftA {
+        from {
+          transform: translate(0, 0) scale(1);
+        }
+        to {
+          transform: translate(26px, 14px) scale(1.08);
+        }
+      }
+
+      @keyframes driftB {
+        from {
+          transform: translate(0, 0) scale(1);
+        }
+        to {
+          transform: translate(-18px, -24px) scale(1.12);
+        }
+      }
+
+      @media (max-width: 900px) {
+        .stats {
+          grid-template-columns: 1fr;
+        }
+
+        .score-wrap {
+          grid-template-columns: 1fr;
+          justify-items: center;
+          text-align: center;
+        }
+
+        .activity-grid {
+          grid-template-columns: repeat(7, minmax(0, 1fr));
+        }
+
+        .hero-top {
+          flex-direction: column;
+          align-items: flex-start;
+        }
+      }
+
+      @media (min-width: 980px) {
+        .layout {
+          grid-template-columns: 1.05fr 0.95fr;
+          align-items: start;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="shell">
+      <section class="hero">
+        <div class="hero-top">
+          <div>
+            <h1>Goal Flow Dashboard</h1>
+            <p>Track your weekly goals, mark daily progress, and monitor your consistency at a glance.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="layout">
+        <article class="panel">
+          <h2 class="title">Control Deck</h2>
+          <div class="controls">
+            <div class="row">
+              <input id="usernameInput" type="text" placeholder="Username" />
+              <button id="loadUserBtn">Load/Create</button>
+            </div>
+            <p id="userInfo" class="muted">No user loaded.</p>
+
+            <div class="stats">
+              <div class="stat-card">
+                <div class="stat-label">Active Goals</div>
+                <div id="goalCountValue" class="stat-value">0</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-label">Consistency</div>
+                <div id="consistencyValue" class="stat-value">0%</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-label">Current Streak</div>
+                <div id="streakValue" class="stat-value">0 d</div>
+              </div>
+            </div>
+
+            <h3 class="title">Add Goal</h3>
+            <div class="row">
+              <input id="goalNameInput" type="text" placeholder="Goal name" />
+              <input id="goalTargetInput" type="number" min="1" max="21" value="3" style="max-width: 140px" />
+              <button id="addGoalBtn">Add</button>
+            </div>
+
+            <p id="actionMessage" class="error"></p>
+
+            <h3 class="title">Goals</h3>
+            <div id="goalList" class="goal-list"></div>
+          </div>
+        </article>
+
+        <article class="panel">
+          <h2 class="title">Performance Pulse</h2>
+          <div class="score-wrap">
+            <svg class="ring" viewBox="0 0 120 120" aria-hidden="true">
+              <circle class="track" cx="60" cy="60" r="50"></circle>
+              <circle id="progressCircle" class="progress" cx="60" cy="60" r="50"></circle>
+            </svg>
+            <div style="width: 100%">
+              <div id="scoreValue" class="score-value">0%</div>
+              <div id="scoreStatus" class="status-pill">Waiting for data</div>
+              <div id="scoreComment" class="muted">Load a user to start.</div>
+              <div id="scoreMeta" class="muted"></div>
+            </div>
+          </div>
+
+          <div class="pace">
+            <div class="pace-label-row">
+              <span class="muted">Weekly Pace</span>
+              <span id="weeklyPaceLabel" class="muted">0 / 0 checks</span>
+            </div>
+            <div class="pace-track"><div id="weeklyPaceBar" class="pace-fill"></div></div>
+          </div>
+
+          <div class="pace">
+            <div class="pace-label-row">
+              <span class="muted">Top Focus</span>
+              <span id="topGoalValue" class="muted">-</span>
+            </div>
+            <div id="nextActionHint" class="muted" style="margin-top: 8px">No action yet.</div>
+          </div>
+
+          <div class="pace">
+            <div class="pace-label-row">
+              <span class="muted">Goal Analysis</span>
+              <span id="analysisTag" class="analysis-pill neutral">Pending</span>
+            </div>
+            <div class="analysis-grid">
+              <div class="analysis-row">
+                <span class="muted">Feasible</span>
+                <span id="feasibleValue" class="analysis-pill neutral">-</span>
+              </div>
+              <div class="analysis-row">
+                <span class="muted">Realistic</span>
+                <span id="realisticValue" class="analysis-pill neutral">-</span>
+              </div>
+            </div>
+            <div id="analysisReason" class="muted" style="margin-top: 8px">Load a user to start the analysis.</div>
+          </div>
+
+          <div class="pace">
+            <div class="pace-label-row">
+              <span class="muted">Last 14 Days Activity</span>
+              <span id="activityHint" class="muted">No data</span>
+            </div>
+            <div id="activityGrid" class="activity-grid"></div>
+          </div>
+
+          <div class="quick-actions">
+            <button id="refreshScoreBtn">Refresh score</button>
+            <button id="clearDbBtn" class="button-ghost danger">Clear database</button>
+          </div>
+        </article>
+      </section>
+    </main>
+
+    <script>
+      const state = {
+        user: null,
+        goals: [],
+        activity14d: Array(14).fill(0),
+      };
+
+      const usernameInput = document.getElementById("usernameInput");
+      const loadUserBtn = document.getElementById("loadUserBtn");
+      const userInfo = document.getElementById("userInfo");
+      const goalNameInput = document.getElementById("goalNameInput");
+      const goalTargetInput = document.getElementById("goalTargetInput");
+      const addGoalBtn = document.getElementById("addGoalBtn");
+      const goalList = document.getElementById("goalList");
+      const actionMessage = document.getElementById("actionMessage");
+      const scoreValue = document.getElementById("scoreValue");
+      const scoreStatus = document.getElementById("scoreStatus");
+      const scoreComment = document.getElementById("scoreComment");
+      const scoreMeta = document.getElementById("scoreMeta");
+      const progressCircle = document.getElementById("progressCircle");
+      const refreshScoreBtn = document.getElementById("refreshScoreBtn");
+      const clearDbBtn = document.getElementById("clearDbBtn");
+
+      const goalCountValue = document.getElementById("goalCountValue");
+      const consistencyValue = document.getElementById("consistencyValue");
+      const streakValue = document.getElementById("streakValue");
+      const weeklyPaceBar = document.getElementById("weeklyPaceBar");
+      const weeklyPaceLabel = document.getElementById("weeklyPaceLabel");
+      const topGoalValue = document.getElementById("topGoalValue");
+      const nextActionHint = document.getElementById("nextActionHint");
+      const analysisTag = document.getElementById("analysisTag");
+      const feasibleValue = document.getElementById("feasibleValue");
+      const realisticValue = document.getElementById("realisticValue");
+      const analysisReason = document.getElementById("analysisReason");
+      const activityGrid = document.getElementById("activityGrid");
+      const activityHint = document.getElementById("activityHint");
+
+      const radius = 50;
+      const circumference = 2 * Math.PI * radius;
+      progressCircle.style.strokeDasharray = `${circumference}`;
+      progressCircle.style.strokeDashoffset = `${circumference}`;
+
+      function errorMessage(err) {
+        if (err instanceof Error && err.message) return err.message;
+        if (typeof err === "string") return err;
+        if (err && typeof err === "object" && "message" in err) return String(err.message);
+        return "An unexpected error occurred.";
+      }
+
+      function showMessage(message, ok = false) {
+        actionMessage.textContent = message || "";
+        actionMessage.className = ok ? "error ok" : "error";
+      }
+
+      function animateNumber(node, nextValue, suffix = "") {
+        const raw = Number.parseInt(node.dataset.value || "0", 10);
+        const start = Number.isFinite(raw) ? raw : 0;
+        const end = Number.isFinite(nextValue) ? nextValue : 0;
+        const duration = 420;
+        const startTs = performance.now();
+
+        function tick(ts) {
+          const ratio = Math.min(1, (ts - startTs) / duration);
+          const eased = 1 - Math.pow(1 - ratio, 3);
+          const current = Math.round(start + (end - start) * eased);
+          node.textContent = `${current}${suffix}`;
+          if (ratio < 1) {
+            requestAnimationFrame(tick);
+            return;
+          }
+          node.dataset.value = String(end);
+        }
+
+        requestAnimationFrame(tick);
+      }
+
+      function setScore(score, status, comment) {
+        const safeScore = Number.isFinite(score) ? Math.max(0, Math.min(100, score)) : 50;
+        scoreValue.textContent = `${safeScore}%`;
+        scoreStatus.textContent = status;
+        scoreComment.textContent = comment;
+
+        if (safeScore >= 70) {
+          progressCircle.style.stroke = "var(--success)";
+        } else if (safeScore >= 45) {
+          progressCircle.style.stroke = "var(--warn)";
+        } else {
+          progressCircle.style.stroke = "var(--danger)";
+        }
+
+        const offset = circumference * (1 - safeScore / 100);
+        progressCircle.style.strokeDashoffset = `${offset}`;
+      }
+
+      function resetDerivedPanels() {
+        animateNumber(goalCountValue, 0);
+        animateNumber(consistencyValue, 0, "%");
+        animateNumber(streakValue, 0, " d");
+        weeklyPaceLabel.textContent = "0 / 0 checks";
+        weeklyPaceBar.style.width = "0%";
+        topGoalValue.textContent = "-";
+        nextActionHint.textContent = "No action yet.";
+        analysisTag.textContent = "Pending";
+        analysisTag.className = "analysis-pill neutral";
+        feasibleValue.textContent = "-";
+        feasibleValue.className = "analysis-pill neutral";
+        realisticValue.textContent = "-";
+        realisticValue.className = "analysis-pill neutral";
+        analysisReason.textContent = "Load a user to start the analysis.";
+        activityHint.textContent = "No data";
+        state.activity14d = Array(14).fill(0);
+        renderActivityGrid();
+      }
+
+      function setPill(node, label, tone) {
+        node.textContent = label;
+        node.className = `analysis-pill ${tone}`;
+      }
+
+      function evaluatePlan(details, score) {
+        const weeklyTarget = Number(details.weekly_target || 0);
+        const remainingNeeded = Number(details.remaining_needed || 0);
+        const daysLeft = Math.max(1, Number(details.days_left_in_week || 1));
+        const requiredDaily = Number(details.required_daily_from_now || 0);
+        const consistency = Number(details.consistency_14d || 0);
+        const trend = Number(details.trend_3d || 0);
+
+        if (weeklyTarget <= 0) {
+          return {
+            feasible: { label: "N/A", tone: "neutral" },
+            realistic: { label: "N/A", tone: "neutral" },
+            tag: { label: "No target", tone: "neutral" },
+            reason: "Add at least one weekly goal to start the analysis.",
+          };
+        }
+
+        let feasible = { label: "No", tone: "bad" };
+        if (remainingNeeded <= 0 || score >= 70) {
+          feasible = { label: "Yes", tone: "good" };
+        } else if (requiredDaily <= 1.5 && score >= 50) {
+          feasible = { label: "Borderline", tone: "warn" };
+        }
+
+        let realistic = { label: "Too ambitious", tone: "bad" };
+        if (requiredDaily <= 1.1 && consistency >= 0.6) {
+          realistic = { label: "Yes", tone: "good" };
+        } else if (requiredDaily <= 1.8 && consistency >= 0.35) {
+          realistic = { label: "Needs adjustment", tone: "warn" };
+        }
+
+        let tag = { label: "Plan to revise", tone: "bad" };
+        if (feasible.tone === "good" && realistic.tone === "good") {
+          tag = { label: "Solid plan", tone: "good" };
+        } else if (feasible.tone !== "bad" && realistic.tone !== "bad") {
+          tag = { label: "Adjustable plan", tone: "warn" };
+        }
+
+        const reason = `${Math.max(0, Math.round(remainingNeeded))} check(s) left over ${daysLeft} day(s), ~${requiredDaily.toFixed(
+          1
+        )}/day needed, consistency ${Math.round(consistency * 100)}%, trend ${trend.toFixed(2)}.`;
+
+        return { feasible, realistic, tag, reason };
+      }
+
+      function renderActivityGrid() {
+        activityGrid.innerHTML = "";
+        const maxValue = Math.max(...state.activity14d, 0);
+        state.activity14d.forEach((value) => {
+          const cell = document.createElement("div");
+          cell.className = "activity-cell";
+          if (value > 0) {
+            if (value <= Math.max(1, Math.ceil(maxValue / 3))) cell.classList.add("level-1");
+            else if (value <= Math.max(2, Math.ceil((2 * maxValue) / 3))) cell.classList.add("level-2");
+            else cell.classList.add("level-3");
+          }
+          cell.title = `${value} completed check(s)`;
+          activityGrid.appendChild(cell);
+        });
+      }
+
+      async function api(path, options = {}) {
+        const response = await fetch(path, {
+          headers: { "Content-Type": "application/json" },
+          ...options,
+        });
+
+        if (!response.ok) {
+          const data = await response.json().catch(() => ({}));
+          throw new Error(data.detail || `HTTP ${response.status}`);
+        }
+
+        if (response.status === 204) return null;
+        return response.json();
+      }
+
+      async function loadGoals() {
+        if (!state.user) {
+          state.goals = [];
+          renderGoals();
+          return;
+        }
+
+        const goals = await api(`/api/goals?user_id=${state.user.id}`);
+        state.goals = goals;
+        animateNumber(goalCountValue, goals.length);
+        renderGoals();
+      }
+
+      function renderGoals() {
+        if (state.goals.length === 0) {
+          goalList.innerHTML = '<p class="muted">No goals yet. Create one to start building streaks.</p>';
+          return;
+        }
+
+        goalList.innerHTML = "";
+
+        state.goals.forEach((goal, index) => {
+          const item = document.createElement("div");
+          item.className = "goal-item";
+          item.style.animationDelay = `${index * 70}ms`;
+
+          const meta = document.createElement("div");
+          meta.className = "goal-meta";
+
+          const goalName = document.createElement("div");
+          goalName.className = "goal-name";
+          goalName.textContent = goal.name;
+
+          const target = document.createElement("div");
+          target.className = "target-badge";
+          target.textContent = `Target: ${goal.target_per_week}/week`;
+
+          meta.appendChild(goalName);
+          meta.appendChild(target);
+
+          const actions = document.createElement("div");
+          actions.className = "goal-actions";
+
+          const checkBtn = document.createElement("button");
+          checkBtn.textContent = "Check today";
+          checkBtn.addEventListener("click", async () => {
+            try {
+              checkBtn.disabled = true;
+              await api(`/api/goals/${goal.id}/check`, {
+                method: "POST",
+                body: JSON.stringify({ completed: true }),
+              });
+              showMessage(`Checked: ${goal.name}`, true);
+              await refreshScore();
+            } catch (err) {
+              showMessage(errorMessage(err));
+            } finally {
+              checkBtn.disabled = false;
+            }
+          });
+
+          const removeBtn = document.createElement("button");
+          removeBtn.textContent = "Remove";
+          removeBtn.className = "button-ghost danger";
+          removeBtn.addEventListener("click", async () => {
+            const confirmed = window.confirm(`Remove "${goal.name}" and all its check history?`);
+            if (!confirmed) return;
+
+            try {
+              removeBtn.disabled = true;
+              checkBtn.disabled = true;
+              await api(`/api/goals/${goal.id}`, { method: "DELETE" });
+              showMessage(`Removed: ${goal.name}`, true);
+              await refreshScore();
+            } catch (err) {
+              showMessage(errorMessage(err));
+            } finally {
+              removeBtn.disabled = false;
+              checkBtn.disabled = false;
+            }
+          });
+
+          item.appendChild(meta);
+          actions.appendChild(checkBtn);
+          actions.appendChild(removeBtn);
+          item.appendChild(actions);
+          goalList.appendChild(item);
+        });
+      }
+
+      async function refreshActivityInsights() {
+        if (!state.user || state.goals.length === 0) {
+          state.activity14d = Array(14).fill(0);
+          activityHint.textContent = "No data";
+          renderActivityGrid();
+          return;
+        }
+
+        const perGoal = await Promise.all(
+          state.goals.map(async (goal) => {
+            const history = await api(`/api/goals/${goal.id}/history?days=14`);
+            return history.filter((entry) => entry.completed).map((entry) => entry.date);
+          })
+        );
+
+        const dailyMap = new Map();
+        perGoal.flat().forEach((day) => {
+          dailyMap.set(day, (dailyMap.get(day) || 0) + 1);
+        });
+
+        const today = new Date();
+        const activity = [];
+        for (let i = 13; i >= 0; i -= 1) {
+          const dt = new Date(today);
+          dt.setDate(today.getDate() - i);
+          const key = dt.toISOString().slice(0, 10);
+          activity.push(dailyMap.get(key) || 0);
+        }
+
+        state.activity14d = activity;
+        const activeDays = activity.filter((value) => value > 0).length;
+        activityHint.textContent = `${activeDays}/14 active day(s)`;
+        renderActivityGrid();
+      }
+
+      function setStatusStyle(status) {
+        if (status.toLowerCase().includes("reachable")) {
+          scoreStatus.style.borderColor = "rgba(125, 220, 139, 0.5)";
+          scoreStatus.style.background = "rgba(125, 220, 139, 0.16)";
+          scoreStatus.style.color = "#baf5c2";
+          return;
+        }
+        if (status.toLowerCase().includes("at risk")) {
+          scoreStatus.style.borderColor = "rgba(255, 139, 139, 0.45)";
+          scoreStatus.style.background = "rgba(255, 139, 139, 0.14)";
+          scoreStatus.style.color = "#ffc2c2";
+          return;
+        }
+        scoreStatus.style.borderColor = "rgba(233, 208, 132, 0.45)";
+        scoreStatus.style.background = "rgba(233, 208, 132, 0.14)";
+        scoreStatus.style.color = "#f5e2af";
+      }
+
+      function updateDerivedFromScore(result) {
+        const details = result.details || {};
+        const weeklyProgress = Number(details.weekly_progress || 0);
+        const weeklyTarget = Number(details.weekly_target || 0);
+        const consistencyPct = Math.round(Number(details.consistency_14d || 0) * 100);
+        const streak = Number(details.current_streak || 0);
+        const focusGoal = String(details.focus_goal || "-");
+
+        animateNumber(consistencyValue, consistencyPct, "%");
+        animateNumber(streakValue, streak, " d");
+
+        const paceRatio = weeklyTarget > 0 ? Math.max(0, Math.min(1, weeklyProgress / weeklyTarget)) : 0;
+        weeklyPaceBar.style.width = `${Math.round(paceRatio * 100)}%`;
+        weeklyPaceLabel.textContent = `${Math.round(weeklyProgress)}/${Math.round(weeklyTarget)} checks`;
+        topGoalValue.textContent = focusGoal || "-";
+
+        const lines = String(result.comment || "").split("\n").map((line) => line.trim()).filter(Boolean);
+        nextActionHint.textContent = lines[1] || "No action yet.";
+
+        const analysis = evaluatePlan(details, result.score);
+        setPill(feasibleValue, analysis.feasible.label, analysis.feasible.tone);
+        setPill(realisticValue, analysis.realistic.label, analysis.realistic.tone);
+        setPill(analysisTag, analysis.tag.label, analysis.tag.tone);
+        analysisReason.textContent = analysis.reason;
+      }
+
+      async function refreshScore() {
+        if (!state.user) {
+          setScore(0, "Waiting for data", "Load a user to start.");
+          scoreMeta.textContent = "";
+          resetDerivedPanels();
+          return;
+        }
+
+        try {
+          refreshScoreBtn.disabled = true;
+          refreshScoreBtn.textContent = "Refreshing...";
+
+          await loadGoals();
+          const result = await api(`/api/users/${state.user.id}/ai-score`);
+          await refreshActivityInsights();
+
+          let status = result.reachable ? "Reachable" : "At risk";
+          if (result.not_enough_data) status = "Early estimate";
+          if (result.safe_mode) status = `${status} (safe mode)`;
+
+          setStatusStyle(status);
+          setScore(result.score, status, result.comment);
+          updateDerivedFromScore(result);
+
+          const refreshedAt = new Date(result.generated_at).toLocaleTimeString();
+          const engineLabelMap = {
+            "ai-heuristic": "Local heuristic model",
+            "ml-logistic-regression": "Local ML model (Logistic Regression)",
+            "ml-logistic-regression+ai-heuristic": "Hybrid local model (ML + heuristic)",
+          };
+          const engineLabel = engineLabelMap[result.engine] || result.engine;
+          scoreMeta.textContent = `Model: ${engineLabel} | Updated: ${refreshedAt}`;
+        } catch (err) {
+          showMessage(errorMessage(err));
+        } finally {
+          refreshScoreBtn.disabled = false;
+          refreshScoreBtn.textContent = "Refresh score";
+        }
+      }
+
+      loadUserBtn.addEventListener("click", async () => {
+        const username = usernameInput.value.trim();
+        if (!username) {
+          showMessage("Username is required.");
+          return;
+        }
+
+        try {
+          const user = await api("/api/users", {
+            method: "POST",
+            body: JSON.stringify({ username }),
+          });
+          state.user = user;
+          userInfo.textContent = `User #${user.id} - ${user.username}`;
+          showMessage("User loaded.", true);
+          await refreshScore();
+        } catch (err) {
+          showMessage(errorMessage(err));
+        }
+      });
+
+      addGoalBtn.addEventListener("click", async () => {
+        if (!state.user) {
+          showMessage("Load a user first.");
+          return;
+        }
+
+        const name = goalNameInput.value.trim();
+        const target = Number.parseInt(goalTargetInput.value, 10);
+
+        if (!name || !Number.isFinite(target) || target < 1 || target > 21) {
+          showMessage("Provide a valid goal name and a weekly target between 1 and 21.");
+          return;
+        }
+
+        try {
+          await api("/api/goals", {
+            method: "POST",
+            body: JSON.stringify({
+              user_id: state.user.id,
+              name,
+              target_per_week: target,
+            }),
+          });
+          goalNameInput.value = "";
+          showMessage("Goal added.", true);
+          await refreshScore();
+        } catch (err) {
+          showMessage(errorMessage(err));
+        }
+      });
+
+      refreshScoreBtn.addEventListener("click", refreshScore);
+
+      clearDbBtn.addEventListener("click", async () => {
+        const confirmed = window.confirm("This will permanently delete all users, goals, and checks. Continue?");
+        if (!confirmed) return;
+
+        try {
+          clearDbBtn.disabled = true;
+          await api("/api/admin/clear", { method: "POST" });
+          state.user = null;
+          state.goals = [];
+          usernameInput.value = "";
+          goalNameInput.value = "";
+          userInfo.textContent = "No user loaded.";
+          setScore(0, "Waiting for data", "Load a user to start.");
+          scoreMeta.textContent = "";
+          resetDerivedPanels();
+          renderGoals();
+          showMessage("Database cleared.", true);
+        } catch (err) {
+          showMessage(errorMessage(err));
+        } finally {
+          clearDbBtn.disabled = false;
+        }
+      });
+
+      resetDerivedPanels();
+      renderGoals();
+    </script>
+  </body>
+</html>
