@@ -1,8 +1,8 @@
 # Goal Flow Dashboard
 
-Goal Flow Dashboard is a fullstack local app to track weekly goals, log daily progress, and evaluate execution quality with a local scoring engine.
+![Goal Flow Dashboard Screenshot](screenshot.png)
 
-Built as a portfolio-ready engineering project: clean UI, motion-driven interactions, and pragmatic backend architecture.
+Goal Flow Dashboard is a fullstack local app to track weekly goals, log daily progress, and evaluate execution quality with a local scoring engine.
 
 ## Features
 
@@ -56,7 +56,8 @@ goal-tracker-ml/
 ### 1) Create environment
 
 ```bash
-cd "/Users/ferhatjawedrochdi/Documents/ING2 - INFO/Projects of my own/goal-tracker-ml"
+git clone https://github.com/JRF-cell/Goal-Progress-Tracker.git
+cd Goal-Progress-Tracker
 python3.11 -m venv .venv
 source .venv/bin/activate
 python -m pip install --upgrade pip
@@ -134,5 +135,4 @@ Explicit rules:
 - If weekly target is already reached (`remaining_needed <= 0`), score is `100`.
 - If history is too short, status can be `Early estimate`.
 - With enough data, Logistic Regression is used (or blended with heuristic on small datasets).
-
-
+```
